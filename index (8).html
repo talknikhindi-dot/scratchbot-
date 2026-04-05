@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SCRECH BOT | Lucky Spin</title>
+    <style>
+        :root {
+            --bg-dark: #070b14;
+            --primary-blue: #2563eb;
+            --neon-blue: #00d2ff;
+            --text-white: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-white);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Header Section --- */
+        .header {
+            width: 100%;
+            padding: 40px 0 20px;
+            text-align: center;
+            background: linear-gradient(180deg, #1e293b 0%, transparent 100%);
+        }
+
+        .game-title {
+            font-size: 38px;
+            font-weight: 900;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            /* Neon Gradient Effect */
+            background: linear-gradient(to right, #fff, var(--neon-blue), #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+            filter: drop-shadow(0 0 15px rgba(0, 210, 255, 0.6));
+        }
+
+        /* --- Wheel Container --- */
+        .wheel-box {
+            position: relative;
+            margin-top: 30px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            border: 2px solid rgba(0, 210, 255, 0.2);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Modern Red Pointer */
+        .pointer {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 40px solid #ff3b30;
+            z-index: 100;
+            filter: drop-shadow(0 0 10px #ff3b30);
+        }
+
+        canvas {
+            border-radius: 50%;
+            transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1);
+            border: 6px solid #111;
+        }
+
+        /* --- Status & Control --- */
+        #status-display {
+            margin-top: 25px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffcc00;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.4);
+            height: 30px;
+        }
+
+        .btn-container {
+            width: 85%;
+            max-width: 350px;
+            margin-top: 20px;
+        }
+
+        #spin-button {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, var(--primary-blue), #1d4ed8);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 22px;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+            transition: 0.2s;
+        }
+
+        #spin-button:active {
+            transform: scale(0.95);
+        }
+
+        #spin-button:disabled {
+            background: #334155;
+            box-shadow: none;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="game-title">SCRECH BOT</div>
+    </header>
+
+    <div class="wheel-box">
+        <div class="pointer"></div>
+        <canvas id="wheelCanvas" width="340" height="340"></canvas>
+    </div>
+
+    <div id="status-display">READY TO WIN?</div>
+
+    <div class="btn-container">
+        <button id="spin-button" onclick="startSpin()">SPIN NOW</button>
+    </div>
+
+    <audio id="tickSound" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3"></audio>
+    <audio id="winSound" src="https://www.myinstants.com/media/sounds/congratulations.mp3"></audio>
+
+    <script>
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const spinBtn = document.getElementById('spin-button');
+        const status = document.getElementById('status-display');
+
+        const sectors = [
+            {v: "250", c: "#10b981"}, {v: "T1", c: "#f59e0b"},
+            {v: "T5", c: "#0ea5e9"}, {v: "75", c: "#8b5cf6"},
+            {v: "50", c: "#f43f5e"}, {v: "T1", c: "#06b6d4"},
+            {v: "T1", c: "#eab308"}, {v: "25", c: "#d946ef"}
+        ];
+
+        const n = sectors.length;
+        const arc = (Math.PI * 2) / n;
+        let currentRotation = 0;
+
+        function drawWheel() {
+            sectors.forEach((s, i) => {
+                const angle = i * arc;
+                ctx.beginPath();
+                ctx.fillStyle = s.c;
+                ctx.moveTo(170, 170);
+                ctx.arc(170, 170, 170, angle, angle + arc);
+                ctx.fill();
+                ctx.strokeStyle = "rgba(255,255,255,0.1)";
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(170, 170);
+                ctx.rotate(angle + arc / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "white";
+                ctx.font = "bold 24px Arial";
+                ctx.fillText(s.v, 155, 10);
+                ctx.restore();
+            });
+        }
+
+        function startSpin() {
+            spinBtn.disabled = true;
+            status.innerText = "SPINNING...";
+            
+            const tick = document.getElementById('tickSound');
+            const win = document.getElementById('winSound');
+
+            tick.volume = 1.0;
+            tick.play();
+
+            const rotationAmount = Math.floor(Math.random() * 360) + 2880; 
+            currentRotation += rotationAmount;
+            
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                tick.pause();
+                win.play();
+
+                const actualDeg = (360 - (currentRotation % 360) + 270) % 360;
+                const idx = Math.floor(actualDeg / (360 / n));
+                
+                status.innerText = "YOU WON: " + sectors[idx].v + "!";
+                spinBtn.disabled = false;
+            }, 5000);
+        }
+
+        drawWheel();
+    </script>
+</body>
+</html>
